@@ -20,8 +20,8 @@
 | Etapa | Status |
 |---|---|
 | Camada de ingestão (EL) | Concluída |
-| dbt staging | Em andamento |
-| dbt marts (star schema) | Pendente |
+| dbt staging | Concluída |
+| dbt marts (star schema) | Em andamento |
 | Dashboard | Pendente |
 
 ---
@@ -82,9 +82,27 @@ Soja exportou US$ 53,95 bi com 58,6% indo para a China. Carne bovina aparece log
 - China = US$ 46,8 bi (principal destino)
 - Mato Grosso = US$ 26 bi (principal estado)
 
-### 6. Próximas etapas
+### 6. Transformação — camada de staging
 
-Transformações dbt (staging → marts em star schema) e dashboard analítico.
+Primeira transformação sobre o `raw`: quatro **views** que limpam, tipam e padronizam os
+dados antes de qualquer análise. O banco foi dividido em três schemas espelhando o
+pipeline — `raw` (entrada), `staging` (limpeza), `marts` (saída analítica).
+
+Os dois transforms mais relevantes:
+
+- **`stg_commodity_prices`** — preços do FRED vinham em unidades diferentes (USD/ton para
+  soja/milho, US¢/lb para açúcar/café/boi). A view normaliza tudo para **USD/ton**, de
+  modo que os preços fiquem comparáveis entre commodities.
+- **`stg_bcb_series`** — as séries do BCB vinham em formato *long* (uma linha por série
+  por dia). A view faz **pivot para wide** (uma linha por mês: `usd_brl`, `selic`,
+  `ipca`), agregando o dólar diário para média mensal.
+
+> Detalhe técnico completo — código de cada modelo, decisões e screenshots — em
+> [`docs/staging.md`](docs/staging.md).
+
+### 7. Próximas etapas
+
+Camada de marts (star schema: `fact_exports` + dimensões) e dashboard analítico.
 
 ---
 
