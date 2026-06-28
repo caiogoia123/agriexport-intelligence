@@ -26,13 +26,21 @@
 
 ---
 
-## Como funciona
+## Passo a passo — como foi construído
 
-```
-APIs públicas  →  Python (ingestion/)  →  DuckDB raw  →  dbt  →  Dashboard
-```
+### 1. Definição da pergunta de negócio
 
-### Fontes de dados
+Parti de uma pergunta concreta: *onde estão o risco e a oportunidade nas exportações do agronegócio brasileiro?* Isso levou a três métricas-alvo — concentração de mercado (HHI), competitividade de preço (preço implícito vs. FRED) e decomposição do swing FOB (preço × câmbio × volume).
+
+### 2. Escolha da stack
+
+- **DuckDB** como banco analítico local — sem servidor, arquivo único, SQL completo, lê Parquet nativamente.
+- **Python** para a camada de ingestão (requests + duckdb).
+- **dbt** para as transformações (staging → marts em star schema).
+
+### 3. Ingestão de dados (camada EL)
+
+Quatro fontes públicas, todas via API:
 
 | Tabela raw | Fonte | Granularidade | Período |
 |---|---|---|---|
@@ -47,12 +55,44 @@ APIs públicas  →  Python (ingestion/)  →  DuckDB raw  →  dbt  →  Dashbo
 
 **8 grupos de commodities mapeados:** acucar, algodao, cafe, carne_bovina, carne_frango, celulose, milho, soja.
 
-### Validação 2024
+> **Nota:** CEPEA foi descartado (Cloudflare 403 na API) e substituído pelo FRED como fonte de preços internacionais.
+
+### 4. Exploração do banco com DBeaver
+
+Com os dados carregados em `data/dev.duckdb`, o schema `raw` ficou disponível para exploração visual no DBeaver:
+
+**`raw.comexstat_exports`** — dados de exportação por mês, NCM, país de destino e estado de origem:
+
+![DBeaver — comexstat_exports](docs/dbeaver_comexstat.png)
+
+**`raw.ncm_reference`** — tabela de referência mapeando cada código NCM ao grupo de commodity:
+
+![DBeaver — ncm_reference](docs/dbeaver_ncm_reference.png)
+
+**Concentração de mercado — dependência da China por commodity (2024):** join entre as duas tabelas, calculando o percentual do FOB exportado para a China e o total em bilhões de USD:
+
+![DBeaver — concentração China](docs/dbeaver_china_concentration.png)
+
+Soja exportou US$ 53,95 bi com 58,6% indo para a China. Carne bovina aparece logo atrás com 51,3% de dependência — exatamente o tipo de risco de concentração que o projeto vai quantificar via HHI.
+
+### 5. Validação da ingestão (2024)
 
 - 48.513 linhas em `comexstat_exports`
 - Soja = US$ 53,9 bi FOB
 - China = US$ 46,8 bi (principal destino)
 - Mato Grosso = US$ 26 bi (principal estado)
+
+### 6. Próximas etapas
+
+Transformações dbt (staging → marts em star schema) e dashboard analítico.
+
+---
+
+## Como funciona
+
+```
+APIs públicas  →  Python (ingestion/)  →  DuckDB raw  →  dbt  →  Dashboard
+```
 
 ---
 
