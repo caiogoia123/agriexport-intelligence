@@ -9,16 +9,20 @@ authors = [{ name = "Caio Goia Oliveira Galdino do Prado" }]
 dependencies = [
     "requests>=2.31",
     "pandas>=2.2",
+    "duckdb>=1.0",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "dbt-bigquery>=1.8",
     "dbt-duckdb>=1.8",
-    "duckdb>=1.0",
     "pytest>=8.0",
     "ruff>=0.6",
 ]
+
+[tool.setuptools.packages.find]
+include = ["ingestion*"]
 
 [tool.ruff]
 line-length = 100

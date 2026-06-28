@@ -6,12 +6,14 @@ sources:
     schema: raw
     tables:
       - name: comexstat_exports
-        description: Brazilian exports — month x NCM x destination x origin state.
-        # Phase 4: enable freshness once ingestion writes a load timestamp.
+        description: Brazilian agribusiness exports — month x NCM x destination x origin state.
+        loaded_at_field: loaded_at
+        # Phase 4: enable freshness once ingestion runs on a schedule.
         # freshness:
         #   warn_after: { count: 35, period: day }
-        # loaded_at_field: _dlt_loaded_at
+      - name: ncm_reference
+        description: Agribusiness NCM code -> commodity group + description (product dimension).
       - name: bcb_series
         description: BCB SGS economic time series (USD/BRL, IPCA, SELIC).
-      - name: cepea_prices
-        description: CEPEA/ESALQ commodity price indices.
+      - name: commodity_prices
+        description: FRED monthly commodity benchmark prices in USD (soja, milho, cafe, acucar, boi).
