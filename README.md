@@ -1,61 +1,121 @@
-# 🌎 AgriExport Intelligence
+# AgriExport Intelligence
 
-> End-to-end analytics-engineering pipeline tracking Brazilian agribusiness exports —
-> from public APIs to a tested cloud warehouse to a live dashboard.
-
-**[▶ Live dashboard](dashboards/README.md)** ·
-**[Architecture](docs/architecture.md)**
-
-[![CI](https://github.com/caiogoia123/agriexport-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/caiogoia123/agriexport-intelligence/actions/workflows/ci.yml)
+> Pipeline de analytics-engineering para exportações do agronegócio brasileiro —
+> APIs públicas → DuckDB → dbt → dashboard.
 
 ---
 
-## The business question
+## Pergunta de negócio
 
-**Where are the risk and the opportunity in Brazil's agri-exports?**
+**Onde estão o risco e a oportunidade nas exportações agrícolas do Brasil?**
 
-- **Market concentration** — how exposed is each commodity to a few buyers? (HHI, top-5 share)
-- **Product competitiveness** — is Brazil's implied export price (US$/ton) keeping up with the
-  underlying commodity price (CEPEA)?
-- **What drives export value** — how much of the FOB swing is *price* vs *FX (USD/BRL)* vs *volume*?
+- **Concentração de mercado** — quão exposta está cada commodity a poucos compradores? (HHI, top-5 share)
+- **Competitividade** — o preço implícito de exportação (US$/ton) acompanha o preço internacional da commodity (FRED)?
+- **O que move o valor exportado** — quanto do swing FOB é *preço* vs *câmbio (USD/BRL)* vs *volume*?
 
-These map to real decisions: market diversification, product mix, and FX hedging.
+---
 
-## Key findings
+## Status do projeto
 
-- 📌 _(insight 1 — with a number)_
-- 📌 _(insight 2)_
-- 📌 _(insight 3)_
-
-## How it works
-
-Public APIs (Comex Stat, BCB, CEPEA) → Python ingestion → **BigQuery** → **dbt**
-(staging → marts, star schema, tested) → **Power BI** + **Looker Studio**, automated with
-**GitHub Actions**. Full diagram in [docs/architecture.md](docs/architecture.md).
-
-## Repository layout
-
-| Folder | What's inside |
+| Etapa | Status |
 |---|---|
-| [`ingestion/`](ingestion/) | Python scripts that pull raw data from the public APIs |
-| [`dbt/`](dbt/) | SQL transformations: `staging/` → `marts/` (star schema) + tests |
-| [`dashboards/`](dashboards/) | Power BI file + link to the public Looker Studio dashboard |
-| [`docs/`](docs/) | Architecture diagram and data model |
+| Camada de ingestão (EL) | Concluída |
+| dbt staging | Em andamento |
+| dbt marts (star schema) | Pendente |
+| Dashboard | Pendente |
+
+---
+
+## Como funciona
+
+```
+APIs públicas  →  Python (ingestion/)  →  DuckDB raw  →  dbt  →  Dashboard
+```
+
+### Fontes de dados
+
+| Tabela raw | Fonte | Granularidade | Período |
+|---|---|---|---|
+| `raw.comexstat_exports` | API Comex Stat (MDIC) | mês × NCM × país × estado | 2020–2024 |
+| `raw.ncm_reference` | API Comex Stat `/tables/ncm` | 1 linha por NCM | atual (86 codes) |
+| `raw.bcb_series` | BCB SGS (séries 1, 432, 433) | diária / mensal | 2015–hoje |
+| `raw.commodity_prices` | FRED (St. Louis Fed) | mensal | histórico completo |
+
+**Séries BCB:** USD/BRL (cód 1), IPCA (cód 433), Selic (cód 432).
+
+**Commodities FRED:** soja (`PSOYBUSDM`), milho (`PMAIZMTUSDM`), café (`PCOFFOTMUSDM`), açúcar (`PSUGAISAUSDM`), carne bovina (`PBEEFUSDM`).
+
+**8 grupos de commodities mapeados:** acucar, algodao, cafe, carne_bovina, carne_frango, celulose, milho, soja.
+
+### Validação 2024
+
+- 48.513 linhas em `comexstat_exports`
+- Soja = US$ 53,9 bi FOB
+- China = US$ 46,8 bi (principal destino)
+- Mato Grosso = US$ 26 bi (principal estado)
+
+---
+
+## Estrutura do repositório
+
+| Pasta | O que contém |
+|---|---|
+| [`ingestion/`](ingestion/) | Scripts Python que puxam dados das APIs públicas |
+| [`dbt/`](dbt/) | Transformações SQL: `staging/` → `marts/` (star schema) + testes |
+| [`dashboards/`](dashboards/) | Arquivos de dashboard |
+| [`docs/`](docs/) | Diagrama de arquitetura e modelo de dados |
+
+---
 
 ## Quickstart
 
 ```bash
-# 1. Environment
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# 1. Ambiente
+python -m venv .venv
+.venv\Scripts\activate          # Windows
 pip install -e ".[dev]"
 
-# 2. Transform locally with DuckDB (no cloud account needed)
+# 2. Ingestão
+python -m ingestion
+
+# 3. Transformações dbt
 cp dbt/profiles.example.yml ~/.dbt/profiles.yml
 cd dbt && dbt deps && dbt build --target dev
 ```
 
-Stack: `Python` · `BigQuery` · `dbt` · `DuckDB` (dev) · `GitHub Actions` · `Power BI` · `Looker Studio`.
+### Visualizar o banco
 
-## License
+O banco de desenvolvimento fica em `data/dev.duckdb`. Para explorar visualmente, use o **DBeaver** (dbeaver.io) apontando para esse arquivo. Para queries rápidas no terminal, use o **Harlequin** (`pip install harlequin` → `harlequin data/dev.duckdb`).
 
-MIT — see [LICENSE](LICENSE).
+---
+
+## Arquitetura dbt (planejada)
+
+```
+raw.comexstat_exports  ─┐
+raw.ncm_reference      ─┤─►  staging  ─►  marts (star schema)  ─►  dashboard
+raw.bcb_series         ─┤
+raw.commodity_prices   ─┘
+```
+
+Star schema — grain: `mês × NCM × país × estado`
+
+```
+dim_date    dim_product (NCM → grupo → setor)
+    |               |
+    └──► fact_exports ◄──┘      fob_usd, net_weight_kg, implied_price_usd_ton
+              |
+         dim_country   dim_geo (estado, região BR)
+```
+
+---
+
+## Stack
+
+`Python 3.11` · `DuckDB` · `dbt` · `GitHub Actions`
+
+---
+
+## Licença
+
+MIT — ver [LICENSE](LICENSE).
