@@ -1,0 +1,19 @@
+# Copy to ~/.dbt/profiles.yml and fill in your values. NEVER commit the real file.
+agriexport:
+  target: dev # local, free, no credentials
+  outputs:
+    # Local development with DuckDB — iterate offline at zero cost.
+    dev:
+      type: duckdb
+      path: ../data/agriexport.duckdb
+      schema: main
+
+    # Production warehouse — BigQuery free tier (10 GB storage + 1 TB query/month).
+    prod:
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('GCP_KEYFILE_PATH') }}"
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: agriexport
+      location: US
+      threads: 4

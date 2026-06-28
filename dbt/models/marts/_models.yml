@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: fact_exports
+    description: >
+      Export facts at month x NCM product x destination country x origin state.
+      Measures: fob_usd, net_weight_kg, implied_price_usd_ton.
+    columns:
+      - name: export_id
+        description: Surrogate key.
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_date'), field: date_key }
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_product'), field: product_key }
+      - name: country_key
+        data_tests:
+          - not_null
+          - relationships: { to: ref('dim_country'), field: country_key }
+      - name: fob_usd
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range: { min_value: 0 }
+
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+  - name: dim_product
+    description: NCM product -> agri chain -> sector hierarchy.
+    columns:
+      - name: product_key
+        data_tests: [unique, not_null]
+  - name: dim_country
+    columns:
+      - name: country_key
+        data_tests: [unique, not_null]
+  - name: dim_geo
+    columns:
+      - name: geo_key
+        data_tests: [unique, not_null]

@@ -1,0 +1,14 @@
+name: "agriexport"
+version: "0.1.0"
+config-version: 2
+
+profile: "agriexport"
+
+models:
+  agriexport:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts

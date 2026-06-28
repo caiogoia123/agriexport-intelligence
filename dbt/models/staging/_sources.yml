@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw landed data from public APIs (EL layer).
+    schema: raw
+    tables:
+      - name: comexstat_exports
+        description: Brazilian exports — month x NCM x destination x origin state.
+        # Phase 4: enable freshness once ingestion writes a load timestamp.
+        # freshness:
+        #   warn_after: { count: 35, period: day }
+        # loaded_at_field: _dlt_loaded_at
+      - name: bcb_series
+        description: BCB SGS economic time series (USD/BRL, IPCA, SELIC).
+      - name: cepea_prices
+        description: CEPEA/ESALQ commodity price indices.

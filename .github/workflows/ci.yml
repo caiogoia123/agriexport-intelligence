@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Ruff (lint)
+        run: ruff check .
+
+      - name: Pytest (ingestion)
+        run: pytest
+
+      # Validate the dbt project against DuckDB so CI needs no cloud credentials.
+      # Phase 2: once raw_* tables exist, upgrade `dbt parse` -> `dbt build --target dev`.
+      - name: dbt validate (DuckDB)
+        working-directory: dbt
+        run: |
+          mkdir -p ~/.dbt
+          cp profiles.example.yml ~/.dbt/profiles.yml
+          dbt deps
+          dbt parse --target dev

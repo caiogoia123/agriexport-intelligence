@@ -1,0 +1,31 @@
+[project]
+name = "agriexport-intelligence"
+version = "0.1.0"
+description = "End-to-end analytics-engineering pipeline for Brazilian agribusiness exports"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Caio Goia Oliveira Galdino do Prado" }]
+dependencies = [
+    "requests>=2.31",
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "dbt-bigquery>=1.8",
+    "dbt-duckdb>=1.8",
+    "duckdb>=1.0",
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["ingestion/tests"]
